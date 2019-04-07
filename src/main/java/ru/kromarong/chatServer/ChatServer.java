@@ -1,5 +1,7 @@
 package ru.kromarong.chatServer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.kromarong.chatClient.swing.PatternList;
 import ru.kromarong.chatServer.auth.AuthService;
 import ru.kromarong.chatServer.auth.AuthServiceImpl;
@@ -25,6 +27,8 @@ public class ChatServer {
 
     private Map<String, ClientHandler> clientHandlerMap = Collections.synchronizedMap(new HashMap<>());
 
+    private static final Logger logger = LoggerFactory.getLogger(ChatServer.class);
+
     public static void main(String[] args) {
         ChatServer chatServer = new ChatServer();
         chatServer.start(7777);
@@ -32,12 +36,12 @@ public class ChatServer {
 
     public void start(int port) {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("Server started!");
+            logger.info("Server started!");
             while (true) {
                 Socket socket = serverSocket.accept();
                 DataInputStream inp = new DataInputStream(socket.getInputStream());
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                System.out.println("New client connected!");
+                logger.info("New client connected!");
 
                 try {
                     String authMessage = inp.readUTF();
@@ -51,9 +55,9 @@ public class ChatServer {
                             out.writeUTF("/auth successful");
                             out.flush();
                             broadcastUserConnected(username);
-                            System.out.printf("Authorization for user %s successful%n", username);
+                            logger.info("Authorization for user {} successful%n", username);
                         } else {
-                            System.out.printf("Authorization for user %s failed%n", username);
+                            logger.error("Authorization for user {} failed%n", username);
                             out.writeUTF("/auth fails");
                             out.flush();
                             socket.close();
@@ -70,10 +74,10 @@ public class ChatServer {
                             out.writeUTF("/reg successful");
                             out.flush();
                             broadcastUserConnected(user);
-                            System.out.printf("Registration for user %s successful%n", user);
+                            logger.info("Registration for user {} successful%n", user);
                         }
                     } else {
-                        System.out.printf("Incorrect authorization message %s%n", authMessage);
+                        logger.info("Incorrect authorization message {}%n", authMessage);
                         out.writeUTF("/auth fails");
                         out.flush();
                         socket.close();
@@ -97,7 +101,7 @@ public class ChatServer {
         if (userToClientHandler != null) {
             userToClientHandler.sendMessage(userFrom, msg);
         } else {
-            System.out.printf("User %s not found. Message from %s is lost.%n", userTo, userFrom);
+            logger.info("User {} not found. Message from {} is lost.%n", userTo, userFrom);
         }
     }
 
